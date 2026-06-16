@@ -93,6 +93,10 @@ func NewPostgres(ctx context.Context, scfg Config) (*PostgresStore, error) {
 }
 
 // Close shuts down the connection pool.
+func (s *PostgresStore) IsMemoryStore() bool {
+	return false
+}
+
 func (s *PostgresStore) Close() {
 	s.pool.Close()
 }

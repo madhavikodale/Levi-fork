@@ -512,6 +512,9 @@ type Store interface {
 	//
 	// Telemetry events are forwarded to Datadog (Logs API + DogStatsD)
 	// for durable storage and querying.
+
+	// IsMemoryStore returns true if this is an in-memory store (dev/testing).
+	IsMemoryStore() bool
 }
 
 // TelemetryEventRecord is the persistence-layer representation of a telemetry

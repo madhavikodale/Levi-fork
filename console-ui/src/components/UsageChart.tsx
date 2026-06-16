@@ -29,11 +29,11 @@ export function UsageChart({ usage }: Props) {
         Spend Over Time
       </h3>
       <div className="flex items-end gap-1.5 h-32">
-        {days.map(([day, cost]) => {
+        {days.map(([day, cost], index) => {
           const pct = Math.max((cost / maxCost) * 100, 4);
           return (
             <div
-              key={day}
+              key={`${day}-${index}`}
               className="flex-1 flex flex-col items-center gap-1 group"
             >
               {/* Tooltip */}

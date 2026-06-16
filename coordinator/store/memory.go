@@ -191,6 +191,10 @@ const DefaultPruneMaxEntries = 100_000
 // retention story (SQL DELETE or partitioning).
 //
 // maxEntries <= 0 uses DefaultPruneMaxEntries.
+func (s *MemoryStore) IsMemoryStore() bool {
+	return true
+}
+
 func (s *MemoryStore) Prune(maxEntries int) {
 	if maxEntries <= 0 {
 		maxEntries = DefaultPruneMaxEntries

@@ -60,12 +60,20 @@ export function useFleetData(): FleetData {
     setRefreshing(true);
     try {
       const token = await getAccessToken().catch(() => null);
-      if (!token) {
+      
+      // Dev mode: use API key instead of Privy token
+      const devKey = typeof window !== "undefined" ? localStorage.getItem("darkbloom_api_key") : null;
+      const isDev = !!(devKey?.startsWith("dev-key-local-"));
+      
+      if (!token && !isDev) {
         if (!hasDataRef.current) setError("Not authenticated");
         else setPollFailed(true);
         return;
       }
-      const headers = { Authorization: `Bearer ${token}` };
+      
+      const headers = isDev 
+        ? { Authorization: `Bearer ${devKey}` }
+        : { Authorization: `Bearer ${token}` };
 
       // Providers is required; summary is best-effort.
       const [pRes, sRes] = await Promise.allSettled([

@@ -1600,21 +1600,24 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		reservedMicroUSD = s.reservationCost(model, billingPromptTokens, requestedMaxTokens)
 		// Per-key spend cap (phase 1) — checked before the reservation so a
 		// capped key never debits the account ledger.
-		if msg, ok := s.checkKeySpendCap(r.Context(), reservedMicroUSD); !ok {
-			writeJSON(w, http.StatusPaymentRequired, errorResponse("insufficient_quota", msg, withCode("insufficient_quota")))
-			return
-		}
-		var err error
-		serviceReservation, err = s.reserveInitialBalance(consumerKey, model, reservedMicroUSD)
-		if err != nil {
-			if errors.Is(err, store.ErrInsufficientBalance) {
-				writeJSON(w, http.StatusPaymentRequired, errorResponse("insufficient_funds",
-					"your balance is too low for this request — add funds at /billing or lower max_tokens", withCode("insufficient_quota")))
-			} else {
-				s.logger.Error("balance reservation failed (DB error)", "consumer_key", consumerKey, "error", err)
-				s.writeServiceUnavailable(w, model)
+		// Dev bypass: skip billing for dev-account
+		if consumerKeyFromContext(r.Context()) != "dev-account" {
+			if msg, ok := s.checkKeySpendCap(r.Context(), reservedMicroUSD); !ok {
+				writeJSON(w, http.StatusPaymentRequired, errorResponse("insufficient_quota", msg, withCode("insufficient_quota")))
+				return
 			}
-			return
+			var err error
+			serviceReservation, err = s.reserveInitialBalance(consumerKey, model, reservedMicroUSD)
+			if err != nil {
+				if errors.Is(err, store.ErrInsufficientBalance) {
+					writeJSON(w, http.StatusPaymentRequired, errorResponse("insufficient_funds",
+						"your balance is too low for this request — add funds at /billing or lower max_tokens", withCode("insufficient_quota")))
+				} else {
+					s.logger.Error("balance reservation failed (DB error)", "consumer_key", consumerKey, "error", err)
+					s.writeServiceUnavailable(w, model)
+				}
+				return
+			}
 		}
 	}
 	timing.ReservedAt = time.Now()

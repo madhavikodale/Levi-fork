@@ -15,7 +15,14 @@ import {
 
 const getApiKey = () => {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("darkbloom_api_key") || "";
+  // Dev mode: inject a local dev key if none exists
+  const existing = localStorage.getItem("darkbloom_api_key") || "";
+  if (!existing && process.env.NEXT_PUBLIC_DEV_MODE === "true") {
+    const devKey = "dev-key-local-" + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem("darkbloom_api_key", devKey);
+    return devKey;
+  }
+  return existing;
 };
 
 function proxyHeaders(extra?: Record<string, string>): Record<string, string> {

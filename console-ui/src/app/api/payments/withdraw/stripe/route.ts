@@ -14,6 +14,13 @@ export async function POST(req: NextRequest) {
     const privyToken = req.cookies.get("privy-token")?.value;
     if (privyToken) authHeader = `Bearer ${privyToken}`;
   }
+  // Dev mode: accept dev key from x-api-key header
+  if (!authHeader) {
+    const devKey = req.headers.get("x-api-key");
+    if (devKey?.startsWith("dev-key-local-")) {
+      authHeader = `Bearer ${devKey}`;
+    }
+  }
 
   const body = await req.json().catch(() => ({}));
 

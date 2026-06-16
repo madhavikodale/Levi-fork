@@ -13,6 +13,13 @@ export async function GET(req: NextRequest) {
     const privyToken = req.cookies.get("privy-token")?.value;
     if (privyToken) authHeader = `Bearer ${privyToken}`;
   }
+  // Dev mode: accept dev key from x-api-key header
+  if (!authHeader) {
+    const devKey = req.headers.get("x-api-key");
+    if (devKey?.startsWith("dev-key-local-")) {
+      authHeader = `Bearer ${devKey}`;
+    }
+  }
 
   const url = new URL(req.url);
   const limit = url.searchParams.get("limit");

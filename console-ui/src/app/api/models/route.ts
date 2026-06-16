@@ -271,6 +271,39 @@ export async function GET(req: NextRequest) {
   });
 
   const body = await res.text();
+  
+  // Dev mode: inject mock models if response is empty
+  if (apiKey.startsWith("dev-key-local-") && body.includes('"data":[]')) {
+    return NextResponse.json({
+      object: "list",
+      data: [
+        {
+          id: "gemma-4-26b",
+          object: "model",
+          created: 1700000000,
+          owned_by: "eigeninference",
+          name: "Gemma 4 26B",
+          display_name: "Gemma 4 26B",
+          description: "Google Gemma 4 26B parameter model",
+          context_length: 128000,
+          max_output_length: 8192,
+          quantization: "8-bit",
+          metadata: {
+            model_type: "text",
+            provider_count: 0,
+            routable_providers: 0,
+            trust_level: "none",
+            display_name: "Gemma 4 26B",
+            size_gb: 26,
+            min_ram_gb: 36,
+            max_context_length: 128000,
+            capabilities: ["text", "vision"],
+          },
+        },
+      ],
+    });
+  }
+  
   return new NextResponse(body, {
     status: res.status,
     headers: { "Content-Type": res.headers.get("Content-Type") || "application/json" },

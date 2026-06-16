@@ -2641,9 +2641,9 @@ function NodeDetail({
           {modelList.length === 0 ? (
             <span className="text-xs text-text-tertiary">No model list reported.</span>
           ) : (
-            modelList.map((model) => (
+            modelList.map((model, index) => (
               <span
-                key={model}
+                key={`${model}-${index}`}
                 className={`rounded-md px-2 py-1 text-[11px] font-mono ${
                   model === provider.current_model
                     ? "bg-accent-brand/10 text-accent-brand"
@@ -2847,7 +2847,7 @@ function NetworkNodes({ providers }: { providers: ProviderStats[] }) {
         >
           <option value="all">All models</option>
           {modelOptions.map((model) => (
-            <option key={model} value={model}>
+            <option key={`model-opt-${model}`} value={model}>
               {shortModelName(model)}
             </option>
           ))}

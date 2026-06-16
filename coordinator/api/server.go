@@ -874,6 +874,13 @@ func (s *Server) SyncModelCatalog() {
 			MinRAMGB:   row.MinRAMGB,
 		})
 	}
+	
+	// Dev mode: skip catalog sync if memory store is empty (allow all models)
+	if len(entries) == 0 && s.store.IsMemoryStore() {
+		s.logger.Warn("dev mode: skipping empty catalog sync — all models accepted")
+		return
+	}
+	
 	s.registry.SetModelCatalog(entries)
 	s.logger.Info("model registry catalog synced to registry", "active_models", len(entries))
 
@@ -1946,7 +1953,21 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := extractBearerToken(r)
 		if token == "" {
-			writeJSON(w, http.StatusUnauthorized, errorResponse("authentication_error", "missing credentials — use Authorization: Bearer <token>"))
+			writeJSON(w, http.StatusUnauthorized, errorResponse("authentication_error", "missing credentials"))
+			return
+		}
+
+		// Dev bypass: accept any key starting with "dev-key-local-" for local development
+		if strings.HasPrefix(token, "dev-key-local-") {
+			devUser := &store.User{
+				AccountID:   "dev-account",
+				PrivyUserID: "did:privy:dev",
+				Email:       "dev@localhost",
+				CreatedAt:   time.Now(),
+			}
+			ctx := context.WithValue(r.Context(), ctxKeyConsumer, "dev-account")
+			ctx = context.WithValue(ctx, auth.CtxKeyUser, devUser)
+			next(w, r.WithContext(ctx))
 			return
 		}
 
@@ -2065,6 +2086,19 @@ func (s *Server) requirePrivyAuth(next http.HandlerFunc) http.HandlerFunc {
 		token := extractBearerToken(r)
 		if token == "" {
 			writeJSON(w, http.StatusUnauthorized, errorResponse("authentication_error", "missing credentials"))
+			return
+		}
+		// Dev bypass: accept dev keys for local development
+		if strings.HasPrefix(token, "dev-key-local-") {
+			devUser := &store.User{
+				AccountID:   "dev-account",
+				PrivyUserID: "did:privy:dev",
+				Email:       "dev@localhost",
+				CreatedAt:   time.Now(),
+			}
+			ctx := context.WithValue(r.Context(), ctxKeyConsumer, "dev-account")
+			ctx = context.WithValue(ctx, auth.CtxKeyUser, devUser)
+			next(w, r.WithContext(ctx))
 			return
 		}
 		if s.privyAuth == nil || !strings.HasPrefix(token, "eyJ") {

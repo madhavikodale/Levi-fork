@@ -12,6 +12,13 @@ export async function GET(req: NextRequest) {
       authHeader = `Bearer ${privyToken}`;
     }
   }
+  // Dev mode: accept dev key from x-api-key header
+  if (!authHeader) {
+    const devKey = req.headers.get("x-api-key");
+    if (devKey?.startsWith("dev-key-local-")) {
+      authHeader = `Bearer ${devKey}`;
+    }
+  }
   if (!authHeader) {
     return NextResponse.json({ error: "missing privy token" }, { status: 401 });
   }

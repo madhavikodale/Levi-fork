@@ -145,6 +145,12 @@ func main() {
 
 	reg := registry.New(logger)
 
+	// Dev mode: disable catalog filtering to allow any model (memory store only)
+	if cfg.StoreConfig.AllowMemoryStore && cfg.StoreConfig.DatabaseURL == "" {
+		reg.SetModelCatalog(nil)
+		logger.Warn("dev mode: catalog filtering disabled — all models accepted")
+	}
+
 	// Set minimum trust level for routing.
 	if cfg.RegistryCfg.MinTrustLevel != "" {
 		reg.MinTrustLevel = registry.TrustLevel(cfg.RegistryCfg.MinTrustLevel)

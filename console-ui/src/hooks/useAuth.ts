@@ -10,7 +10,10 @@ const COORD_URL_STORAGE = "darkbloom_coordinator_url";
 
 export function useAuth() {
   const { ready, authenticated, user, login, logout: privyLogout, getAccessToken } = useAuthContext();
-  const [apiKeyReady, setApiKeyReady] = useState(false);
+  // Dev mode: bypass Privy auth when dev key is present
+  const isDevMode = typeof window !== "undefined" && localStorage.getItem("darkbloom_api_key")?.startsWith("dev-key-local-");
+  const effectiveAuthenticated = authenticated || isDevMode;
+  const [apiKeyReady, setApiKeyReady] = useState(isDevMode);
 
   // Derive useful fields from the Privy user
   const email = (user as { email?: { address?: string } } | null)?.email?.address || null;
@@ -19,7 +22,7 @@ export function useAuth() {
 
   // Migrate old API key and auto-provision on auth
   useEffect(() => {
-    if (!authenticated || typeof window === "undefined") return;
+    if (!effectiveAuthenticated || typeof window === "undefined") return;
 
     const oldKey = localStorage.getItem(OLD_API_KEY_STORAGE);
     if (oldKey && !localStorage.getItem(API_KEY_STORAGE)) {
@@ -56,11 +59,11 @@ export function useAuth() {
           setApiKeyReady(false);
         });
     });
-  }, [authenticated, getAccessToken]);
+  }, [effectiveAuthenticated, getAccessToken]);
 
   // Re-provision API key when it expires (401 from streamChat)
   useEffect(() => {
-    if (!authenticated) return;
+    if (!effectiveAuthenticated) return;
     const handleExpired = () => {
       setApiKeyReady(false);
       getAccessToken().then((token) => {
@@ -86,31 +89,31 @@ export function useAuth() {
     };
     window.addEventListener("darkbloom-key-expired", handleExpired);
     return () => window.removeEventListener("darkbloom-key-expired", handleExpired);
-  }, [authenticated, getAccessToken]);
+  }, [effectiveAuthenticated, getAccessToken]);
 
   // Reset when logged out
   useEffect(() => {
-    if (!authenticated) setApiKeyReady(false);
-  }, [authenticated]);
+    if (!effectiveAuthenticated) setApiKeyReady(false);
+  }, [effectiveAuthenticated]);
 
   // Track login_success event once when the user authenticates
   const hasTrackedLogin = useRef(false);
   useEffect(() => {
-    if (authenticated && !hasTrackedLogin.current) {
+    if (effectiveAuthenticated && !hasTrackedLogin.current) {
       hasTrackedLogin.current = true;
       trackEvent("login_success", { method: email ? "email" : "unknown" });
     }
-    if (!authenticated) {
+    if (!effectiveAuthenticated) {
       hasTrackedLogin.current = false;
     }
-  }, [authenticated, email]);
+  }, [effectiveAuthenticated, email]);
 
   // Clear all app-specific localStorage on login to prevent session poisoning
   // (e.g. attacker pre-sets coordinator URL before victim logs in).
   useEffect(() => {
-    if (!authenticated || typeof window === "undefined") return;
+    if (!effectiveAuthenticated || typeof window === "undefined") return;
     localStorage.removeItem(COORD_URL_STORAGE);
-  }, [authenticated]);
+  }, [effectiveAuthenticated]);
 
   const logout = useCallback(async () => {
     if (typeof window !== "undefined") {
@@ -123,7 +126,7 @@ export function useAuth() {
 
   return {
     ready,
-    authenticated,
+    authenticated: effectiveAuthenticated,
     apiKeyReady,
     user,
     login,

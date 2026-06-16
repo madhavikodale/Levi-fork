@@ -435,9 +435,9 @@ export default function BillingContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedUsage.map((entry) => (
+                    {sortedUsage.map((entry, index) => (
                       <tr
-                        key={entry.request_id}
+                        key={entry.request_id || `usage-${index}`}
                         className="border-b border-border-subtle/50 hover:bg-bg-hover/50 transition-colors"
                       >
                         <td className="px-3 sm:px-5 py-3 font-mono text-xs text-text-secondary">

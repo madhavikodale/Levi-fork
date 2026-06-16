@@ -12,6 +12,13 @@ export async function POST(req: NextRequest) {
       authHeader = `Bearer ${privyToken}`;
     }
   }
+  // Dev mode: accept dev key from x-api-key header
+  if (!authHeader) {
+    const devKey = req.headers.get("x-api-key");
+    if (devKey?.startsWith("dev-key-local-")) {
+      authHeader = `Bearer ${devKey}`;
+    }
+  }
 
   const res = await fetch(`${coordUrl}/v1/auth/keys`, {
     method: "POST",
